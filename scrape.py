@@ -11,6 +11,9 @@ pp = pprint.PrettyPrinter(indent=4)
 DictQuote={}
 final_quote=""
 final_image=""
+
+punctuation = [".", "!", "?", ")", "]", "\"", "'", "\u201D"]
+prefixes = ['dr', 'vs', 'mr', 'mrs','ms' ,'prof', 'inc','jr','f.b.i','i.e']
 def parse(argv):
 
     found_text=0    
@@ -19,143 +22,76 @@ def parse(argv):
     r  = requests.get(argv)
     data = r.text
     soup = BeautifulSoup(data,from_encoding='utf8')
-    para = soup.find_all('p')
+    paras = soup.find_all('p')
     img= soup.find_all('img')
-
-    #Look for block quotes
-    blockQuote= soup.find_all('aside', { "class" : "pullquote" })
-    for line in blockQuote:
-        if found_text==0:
-            final_quote=line.get_text()
-            if len(final_quote)>90 and len(final_quote)<350:
-                found_text=1
                 
-            
-    for line in para:
-        lines=line.get_text()
-        text=text+lines
+    allSen=[]
+       
+    for para in paras:
+        text=para.get_text()
         text.encode('utf-8')
-   
-    text = text.replace('?"', '? "').replace('!"', '! "').replace('."', '" . ').replace('Advertisement','').replace('ADVERTISEMENT','')
-    # REGEX to remove <dot><capital letter> to <dot><space><capital letter> as this was not took care by sentence toeknizer
-    text=re.sub(r'(\.)+([A-Z]+)',"".join(r'\1 \2'),text)
-    #to add more abbrevations to our sentence tokenizer
-    punkt_param = PunktParameters()
-    punkt_param.abbrev_types = set(['dr', 'vs', 'mr', 'mrs','ms' ,'prof', 'inc','jr','f.b.i','i.e'])
-    sentence_splitter = PunktSentenceTokenizer(punkt_param)
-    sentences = sentence_splitter.tokenize(text)
-    
 
-    #To print all the individual sentences found in the Paragraph
-    # for line in sentences:
-    #     # if len(line)>50 and len(line)<500:
-    #     print line
-    #     print "*************"
-    dictionary=[]
-    # For no duplicacy of sentences
-    unique_sentences=[]
-    for line in sentences:
-        if line not in unique_sentences:
-            unique_sentences.append(line)
-    for line in unique_sentences:
-        # print(line)
-        score=0
-        if len(line)>50 and len(line)<400:
-            if "I " in line :
-                if  line.find("\"")!= -1 or line.find(u"\u201C")!= -1:
-                    # print "IN  I AND "" "
-                    # print line 
-                    if '_' in line:
-                        score=score+3
-                    if ':' in line:
-                        score=score+3
-                    if ';' in line:
-                        score=score+3
-                    if line.count(',')>1:
-                        score=score+3  
-                    if ',' in line:
-                        score=score+3  
-                    else:
-                        score=score+3
+        sentences= []
+        quotes= []
+        lastBegin=0
+        lastSpace=0
+        inQuote= False
+        quoteStart = 0
+        lastCap=0
+        spaceQ=0
 
-        if len(line)>50 and len(line)<400:
-            if "I " in line :
-                # print "IN  I :  "
-                # print line 
-                if '_' in line:
-                    score=score+2
-                if ':' in line:
-                    score=score+2
-                if ';' in line:
-                    score=score+2
-                if line.count(',')>1:
-                    score=score+2  
-                if ',' in line:
-                    score=score+2
+        hadQ= False
+        for i in range(len(text)):
+            c=text[i]
+            if c== " ":
+                lastSpace=i
+                if inQuote:
+                    spaceQ+=1
+            elif c=="." and (text[lastSpace+1:i].lower() in prefixes or i-lastCap<2 or i-lastSpace<2):
+                do=0
+                #continue
+            elif c== "." or c=="!" or c=="?":
+                while i<len(text) and text[i] in punctuation:
+                    i+=1
+                s = text[lastBegin:i]
+                sentences.append(s)
+                lastBegin= i
+            elif c == "\"":
+                if inQuote>0:
+                    q= text[quoteStart:i+1]
+                    #print str(quoteStart)+ " - ascii end"
+                    inQuote=False
+                    if spaceQ>3:
+                        quotes.append(q)
+                    spaceQ=0
+                else:
+                    inQuote=True
+                    quoteStart=i
 
-        if len(line)>50 and len(line)<400:
-            if line.find("\"")!= -1 or line.find(u"\u201C")!= -1:
-                # print "IN  quote :  "
-                # print line 
-                if '_' in line:
-                    score=score+2
-                if ':' in line:
-                    score=score+2    
-                if ';' in line:
-                    score=score+2  
-                if line.count(',')>1:
-                    score=score+2   
-                if ',' in line:
-                    score=score+2
-
-        if ';' in line and len(line)>50 and len(line)<400:
-            # print "IN  ; :  "
-            # print line 
-            score=score+1
-
-        if line.count(',')>1 and len(line)>50 and len(line)<400:
-            # print "IN  , many  :  "
-            # print line 
-            score=score+1
-
-        if ',' in line and len(line)>50 and len(line)<400:
-            # print "IN  , one :  "
-            # print line 
-            score=score+1
-
-        dictionary.append([score,line])
-# .encode('ascii', 'xmlcharrefreplace')
-
-    best_quotes=[]
-    quotes=[]
-    dictionary.sort(key=lambda x:x[0], reverse=True)
+            elif c==u'\u201c':
+                inQuote=True
+                quoteStart=i
+            elif c==u'\u201d':
+                q= text[quoteStart:i+1]
+                inQuote=False
+                #print "uni end"
+                if spaceQ>2:
+                        quotes.append(q)
+                spaceQ=0
+            elif ord(c)>64 and ord(c)<91:
+                lastCap = i
+        #pp.pprint(quotes)
+        if len(quotes)>=1:
+            allSen+=quotes
+        #pp.pprint(sentences)
+    pp.pprint(allSen)
 
 
-#Selecting scored lines which have the best scores
-    for score,line in dictionary:
-        if score>=10 :
-            quotes.append([score,line])
 
-    if len(quotes)>=5:
-        # itertools.islice(quotes, 0, 5)
-        best_quotes=quotes[0:5]
-    else:
-        for score,line in dictionary:
-            if  score>=5:
-                quotes.append([score,line])
-        if len(quotes)>=5:
-            best_quotes=quotes[0:5]
-        else:
-            best_quotes=quotes
-    
 
-    # pp.pprint(best_quotes)
-    my_quotes = [i[1] for i in best_quotes]
-    pp.pprint(my_quotes)
-    # print "********************"
 
-# GET THE IMAGE
-    
+
+
     found_img=0
     stri=""
     for i in img:
@@ -172,9 +108,11 @@ def parse(argv):
                                     final_image=image
                                     # print final_image
                                     found_img=1
+
+
+    return allSen,final_image
+#parse('http://www.huffingtonpost.com/entry/david-cameron-dodgy_us_570bf446e4b0885fb50dc004')
+
+
+parse('http://www.theblaze.com/stories/2016/04/12/trump-blasts-rnc-chairman-reince-priebus-should-be-ashamed-of-himself/')
     
-    
-    # print final_image
-    
-    
-    return my_quotes,final_image
