@@ -4547,7 +4547,7 @@ KL.Piquote = (function() {
 	//this._el.menubar			= VCO.Dom.create('div', 'vco-menubar', this._el.container);
 	
 	// API URL
-	this.api_url = "https://piquote.knilab.com/getResults";
+	this.api_url = "/getResults";
 
 	// GRID URL
 	this.grid_url = "grid.json";

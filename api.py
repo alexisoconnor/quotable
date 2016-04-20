@@ -5,7 +5,7 @@ import importlib
 import os
 import sys
 import traceback
-import scrape
+import quote
 from selenium import webdriver
 import requests
 
@@ -65,7 +65,7 @@ def getResults():
     a = request.args.get('a', '')
     
     #Calling scrape.py for quote and Image
-    quotes_array,image = scrape.parse(a)
+    quotes_array,image = quote.parse(a)
     # more_stuff for prototyping purposes
     j = jsonify(quote=quotes_array,image=more_stuff(image,FAKE_IMAGES))
     # return jsonify(image=image,quote=quote)
