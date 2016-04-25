@@ -12,7 +12,7 @@ DictQuote={}
 final_quote=""
 final_image=""
 
-punctuation = [".", "!", "?", ")", "]", "\"", "'", "\u201D"]
+punctuation = [".", "!", "?", ")", "]", "\"", "'", "\u201D"] 
 prefixes = ['dr', 'vs', 'mr', 'mrs','ms' ,'prof', 'inc','jr','f.b.i','i.e']
 def parse(argv):
 
@@ -35,32 +35,33 @@ def parse(argv):
         sentences= []
         quotes= []
         
-        lastBegin=0
-        nextBegin=0 
+        lastBegin=0 #tracks where the last sentence began
+        nextBegin=0 # tracks where the next sentence will begin, set when ending punctuation is found
         lastSpace=0
         inQuote= False
         quoteStart = 0
-        lastCap=0
-        spaceQ=0
+        lastCap=0 # last capitol symbol (ASCII only)
+        spaceQ=0 # number of spaces in a quote
 
-        wasQ= False
-        hadQ=False
-        mightMer=False
+        wasQ= False # was there a quote in the last sentence (not if the qutoe ended it)
+        hadQ=False  # did the last sentence have a quote
+        mightMer=False #If the quote should be merged witht the previous one
 
         
             
         for i in range(len(text)):
-            if i == nextBegin:
+            if i == nextBegin: # sets the start of a new sentence
                 lastBegin=i
             c=text[i]
-            if c== " ":
+            if c== " ": 
                 lastSpace=i
                 if inQuote:
                     spaceQ+=1
-            elif c=="." and (text[lastSpace+1:i].lower() in prefixes or i-lastCap<2 or i-lastSpace<2):
+            elif c=="." and (text[lastSpace+1:i].lower() in prefixes or i-lastCap<2 or i-lastSpace<2): 
+                # all the cases for when a period doesn't end a sentence
                 do=0
                 #continue
-            elif c== "." or c=="!" or c=="?" or c==";":
+            elif c== "." or c=="!" or c=="?" or c==";": # end of a sentence
                 j=i
                 while j<len(text) and text[j] in punctuation:
                     j+=1
@@ -72,8 +73,8 @@ def parse(argv):
                 if wasQ:
                     hadQ=True
                 wasQ=False
-            elif c == "\"":
-                if inQuote>0:
+            elif c == "\"": # AScii quote, toggles whether or not to be in a quote
+                if inQuote:
                     q= text[quoteStart:i+1]
                     #print str(quoteStart)+ " - ascii end"
                     inQuote=False
@@ -92,17 +93,17 @@ def parse(argv):
                     if quoteStart-lastBegin<2 and hadQ:
                         mightMer=True
 
-            elif c==u'\u201c':
+            elif c==u'\u201c': #unicode quote begin
                 inQuote=True
                 quoteStart=i
                 #print str(quoteStart)+" - " +str(lastBegin)+"  //  "+ str(hadQ)
                 if quoteStart-lastBegin<2 and hadQ:
                     mightMer=True
-            elif c==u'\u201d':
+            elif c==u'\u201d': # unicode quote end
                 q= text[quoteStart:i+1]
                     #print str(quoteStart)+ " - ascii end"
                 inQuote=False
-                if spaceQ>3:
+                if spaceQ>3: # quote has 4 or more words
                     if mightMer:
                         merge.append(len(quotes)+len(allQuotes))
                     quotes.append(q)
@@ -120,7 +121,7 @@ def parse(argv):
         #pp.pprint(sentences)
     #print merge
 
-    for i in merge:
+    for i in merge: #merge is a list of indecies where the qutoe at i must merge witht he one at i-1
         q1=allQuotes[i-1]
         q2=allQuotes[i]
         punc=q1[len(q1)-2]
@@ -147,7 +148,7 @@ def parse(argv):
 
 
 
-
+    # old image finding code, to be updated
 
     found_img=0
     stri=""
