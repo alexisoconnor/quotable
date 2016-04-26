@@ -12,8 +12,9 @@ DictQuote={}
 final_quote=""
 final_image=""
 
-punctuation = [".", "!", "?", ")", "]", "\"", "'", "\u201D"] 
+punctuation = [".", "!", "?", ")", "]", "\"", "'", u"\u201D", u"\u201C"] 
 prefixes = ['dr', 'vs', 'mr', 'mrs','ms' ,'prof', 'inc','jr','f.b.i','i.e']
+
 def parse(argv):
 
     found_text=0    
@@ -24,17 +25,23 @@ def parse(argv):
     soup = BeautifulSoup(data,from_encoding='utf8')
     paras = soup.find_all('p')
     img= soup.find_all('img')
+    img2= soup.find_all('meta')
                 
     allQuotes=[]
     allSen = []
     merge=[]  
+    proper=[]
     for para in paras:
         text=para.get_text()
         text.encode('utf-8')
 
         sentences= []
         quotes= []
+
         
+        properStart=0
+        capC=0;
+
         lastBegin=0 #tracks where the last sentence began
         nextBegin=0 # tracks where the next sentence will begin, set when ending punctuation is found
         lastSpace=0
@@ -53,6 +60,10 @@ def parse(argv):
             if i == nextBegin: # sets the start of a new sentence
                 lastBegin=i
             c=text[i]
+            if c in punctuation and c!="'":
+                if capC>1:
+                    proper.append(text[properStart:i])
+                capC=0
             if c== " ": 
                 lastSpace=i
                 if inQuote:
@@ -68,6 +79,11 @@ def parse(argv):
                 s = text[lastBegin:j]
                 sentences.append(s)
                 nextBegin= j
+
+                if capC>1:
+                    proper.append(text[properStart:i])
+                capC=0
+
                 #print str(hadQ)+"-----"
                 hadQ=False
                 if wasQ:
@@ -113,6 +129,13 @@ def parse(argv):
                 mightMer=False
             elif ord(c)>64 and ord(c)<91:
                 lastCap = i
+                if capC==0:
+                    properStart=i
+                capC+=1
+            elif i-lastSpace<=1:
+                if capC>1:
+                    proper.append(text[properStart:i-1])
+                capC=0
         #pp.pprint(quotes)
         if len(quotes)>=1:
             allQuotes+=quotes
@@ -140,9 +163,19 @@ def parse(argv):
         #for e in personal:
             #if
 
+    allQuotes.sort(key= lambda q:len(q), reverse=True)
+
+    while len(allQuotes[0])>500:
+        allQuotes=allQuotes[1:]
 
 
-    pp.pprint(allQuotes)
+    properU=[]
+    for line in proper:
+        if line not in properU:
+            properU.append(line)
+
+
+    #pp.pprint(properU)
 
 
 
@@ -166,9 +199,15 @@ def parse(argv):
                                     final_image=image
                                     # print final_image
                                     found_img=1
+    content=''                                
+    for i in img2:
+        prop=i.get('property')
+        if prop=="og:image":
+            content= i.get('content')
+            break
 
 
-    return allQuotes,final_image
+    return allQuotes,content
 #parse('http://www.huffingtonpost.com/entry/david-cameron-dodgy_us_570bf446e4b0885fb50dc004')
 #parse('http://www.huffingtonpost.com/entry/ted-cruz-gold-standard-republican_us_571196bfe4b06f35cb6fbac6?cps=gravity_2425_-8385480002285021224')
 
