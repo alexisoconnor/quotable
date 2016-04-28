@@ -167,7 +167,10 @@ def parse(argv):
 
     while len(allQuotes[0])>500:
         allQuotes=allQuotes[1:]
-
+    allQuotes.reverse()
+    while len(allQuotes[0])<40:
+        allQuotes=allQuotes[1:]
+    allQuotes.reverse()
 
     properU=[]
     for line in proper:
@@ -178,27 +181,26 @@ def parse(argv):
     #pp.pprint(properU)
 
 
+   
+    origin=multiSplit(data)
+
+    source= origin[origin.index('www')+1]
 
 
-
+    images= []
     # old image finding code, to be updated
 
-    found_img=0
+    
     stri=""
     for i in img:
         stri=i.get('src')
         #print(str)
-        if stri is not None:
-            images=stri.split(" ")
-            if found_img==0:
-                for image in images:
-                    if found_img==0:
-                        if "icon" not in image:
-                            if "contributors" not in image:
-                                if "jpg" in image or "png" in image:
-                                    final_image=image
-                                    # print final_image
-                                    found_img=1
+        pieces= multiSplit(stri)
+        if source in pieces:
+            images.append(stri)
+        
+    pp.pprint(images)
+
     content=''                                
     for i in img2:
         prop=i.get('property')
@@ -207,7 +209,11 @@ def parse(argv):
             break
 
 
-    return allQuotes,content
+    return allQuotes,content, images
+def multiSplit(string):
+
+    list= string.replace('/',' ').replace('.', ' ').replace('_', ' ').split()
+    return list
 #parse('http://www.huffingtonpost.com/entry/david-cameron-dodgy_us_570bf446e4b0885fb50dc004')
 #parse('http://www.huffingtonpost.com/entry/ted-cruz-gold-standard-republican_us_571196bfe4b06f35cb6fbac6?cps=gravity_2425_-8385480002285021224')
 
